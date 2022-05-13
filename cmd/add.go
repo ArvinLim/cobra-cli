@@ -19,14 +19,16 @@ import (
 	"unicode"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
 	packageName string
 	parentName  string
+	workPath    string
 
 	addCmd = &cobra.Command{
-		Use:     "add [command name]",
+		Use:     "add <command name> [path]",
 		Aliases: []string{"command"},
 		Short:   "Add a command to a Cobra Application",
 		Long: `Add (cobra add) will create a new command, with a license and
@@ -46,14 +48,21 @@ Example: cobra add server -> resulting in a new cmd/server.go`,
 			wd, err := os.Getwd()
 			cobra.CheckErr(err)
 
+			if len(args) > 1 {
+				if args[1] != "." && args[1][0] != '-' {
+					wd = fmt.Sprintf("%s/%s", wd, args[1])
+				}
+			}
+
 			commandName := validateCmdName(args[0])
 			command := &Command{
 				CmdName:   commandName,
-				CmdParent: parentName,
+				CmdParent: parentName + "Cmd",
 				Project: &Project{
 					AbsolutePath: wd,
 					Legal:        getLicense(),
 					Copyright:    copyrightLine(),
+					PkgCmd:       viper.GetString("pkgCmd"),
 				},
 			}
 
@@ -65,9 +74,7 @@ Example: cobra add server -> resulting in a new cmd/server.go`,
 )
 
 func init() {
-	addCmd.Flags().StringVarP(&packageName, "package", "t", "", "target package name (e.g. github.com/spf13/hugo)")
-	addCmd.Flags().StringVarP(&parentName, "parent", "p", "rootCmd", "variable name of parent command for this command")
-	cobra.CheckErr(addCmd.Flags().MarkDeprecated("package", "this operation has been removed."))
+	addCmd.Flags().StringVarP(&parentName, "parent", "p", "root", "variable name of parent command for this command")
 }
 
 // validateCmdName returns source without any dashes and underscore.

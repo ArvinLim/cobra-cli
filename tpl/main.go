@@ -33,7 +33,7 @@ func RootTemplate() []byte {
 {{ .Copyright }}
 {{ if .Legal.Header }}{{ .Legal.Header }}{{ end }}
 */
-package cmd
+package {{ .PkgCmd }}
 
 import (
 {{- if .Viper }}
@@ -121,9 +121,9 @@ func initConfig() {
 func AddCommandTemplate() []byte {
 	return []byte(`/*
 {{ .Project.Copyright }}
-{{ if .Legal.Header }}{{ .Legal.Header }}{{ end }}
+{{ if .Project.Legal.Header }}{{ .Project.Legal.Header }}{{ end }}
 */
-package cmd
+package {{ .Project.PkgCmd }}
 
 import (
 	"fmt"

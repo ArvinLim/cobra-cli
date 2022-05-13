@@ -1,12 +1,13 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"text/template"
 
+	"github.com/ArvinLim/cobra-cli/tpl"
 	"github.com/spf13/cobra"
-	"github.com/spf13/cobra-cli/tpl"
 )
 
 // Project contains name, license and paths to projects.
@@ -18,12 +19,21 @@ type Project struct {
 	Legal        License
 	Viper        bool
 	AppName      string
+	PkgCmd       string
 }
 
 type Command struct {
 	CmdName   string
 	CmdParent string
 	*Project
+}
+
+func (p *Project) GetCmdPath() string {
+	if p.PkgCmd == "main" {
+		return ""
+	}
+
+	return p.PkgCmd
 }
 
 func (p *Project) Create() error {
@@ -49,10 +59,10 @@ func (p *Project) Create() error {
 	}
 
 	// create cmd/root.go
-	if _, err = os.Stat(fmt.Sprintf("%s/cmd", p.AbsolutePath)); os.IsNotExist(err) {
-		cobra.CheckErr(os.Mkdir(fmt.Sprintf("%s/cmd", p.AbsolutePath), 0751))
+	if _, err = os.Stat(fmt.Sprintf("%s/%s", p.AbsolutePath, p.GetCmdPath())); os.IsNotExist(err) {
+		cobra.CheckErr(os.Mkdir(fmt.Sprintf("%s/%s", p.AbsolutePath, p.GetCmdPath()), 0751))
 	}
-	rootFile, err := os.Create(fmt.Sprintf("%s/cmd/root.go", p.AbsolutePath))
+	rootFile, err := os.Create(fmt.Sprintf("%s/%s/root.go", p.AbsolutePath, p.GetCmdPath()))
 	if err != nil {
 		return err
 	}
@@ -83,7 +93,16 @@ func (p *Project) createLicenseFile() error {
 }
 
 func (c *Command) Create() error {
-	cmdFile, err := os.Create(fmt.Sprintf("%s/cmd/%s.go", c.AbsolutePath, c.CmdName))
+	if c.Project == nil {
+		return errors.New("Project empty.")
+	}
+
+	p := c.Project
+	if _, err := os.Stat(fmt.Sprintf("%s/%s", p.AbsolutePath, p.GetCmdPath())); os.IsNotExist(err) {
+		cobra.CheckErr(os.Mkdir(fmt.Sprintf("%s/%s", p.AbsolutePath, p.GetCmdPath()), 0751))
+	}
+
+	cmdFile, err := os.Create(fmt.Sprintf("%s/%s/%s.go", c.AbsolutePath, p.GetCmdPath(), c.CmdName))
 	if err != nil {
 		return err
 	}
