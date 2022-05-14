@@ -18,12 +18,20 @@ func MainTemplate() []byte {
 {{ .Copyright }}
 {{ if .Legal.Header }}{{ .Legal.Header }}{{ end }}
 */
+{{ if ne .PkgCmd "main" -}}
 package main
 
-import "{{ .PkgName }}/cmd"
+import "{{ .PkgName }}/{{ .PkgCmd }}"
+{{- else -}}
+package main
+{{- end }}
 
 func main() {
-	cmd.Execute()
+{{-  if eq .PkgCmd "main"  }}
+	Execute()
+{{- else }}
+	{{ .PkgCmd }}.Execute()
+{{- end }}
 }
 `)
 }
