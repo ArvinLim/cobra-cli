@@ -16,6 +16,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -50,6 +51,7 @@ Cobra init must be run inside of a go module (please run "go mod init <MODNAME>"
 )
 
 func initializeProject(args []string) (string, error) {
+	tgtPath := ""
 	wd, err := os.Getwd()
 	if err != nil {
 		return "", err
@@ -57,11 +59,12 @@ func initializeProject(args []string) (string, error) {
 
 	if len(args) > 0 {
 		if args[0] != "." {
+			tgtPath = args[0]
 			wd = fmt.Sprintf("%s/%s", wd, args[0])
 		}
 	}
 
-	modName := getModImportPath()
+	modName := getModImportPath(tgtPath)
 
 	project := &Project{
 		AbsolutePath: wd,
@@ -80,9 +83,15 @@ func initializeProject(args []string) (string, error) {
 	return project.AbsolutePath, nil
 }
 
-func getModImportPath() string {
+func getModImportPath(tgtPath string) string {
 	mod, cd := parseModInfo()
-	return path.Join(mod.Path, fileToURL(strings.TrimPrefix(cd.Dir, mod.Dir)))
+
+	log.Printf("%v, %v, %v", mod, fileToURL(strings.TrimPrefix(cd.Dir, mod.Dir)), tgtPath)
+	if tgtPath == "" {
+		return path.Join(mod.Path, fileToURL(strings.TrimPrefix(cd.Dir, mod.Dir)))
+	}
+
+	return path.Join(mod.Path, fileToURL(strings.TrimPrefix(cd.Dir, mod.Dir)), tgtPath)
 }
 
 func fileToURL(in string) string {
